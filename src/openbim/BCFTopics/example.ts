@@ -271,19 +271,19 @@ Now we will add some UI to play around with the actions in this tutorial. For mo
 
 // const panel = BUI.Component.create<BUI.PanelSection>(() => {
 //   return BUI.html`
-    <bim-panel active label="BCFTopics Tutorial" class="options-menu">
-      <bim-panel-section label="Info">
-        <bim-label style="width: 14rem; white-space: normal;">💡 To fully experience this tutorial, open your browser console!</bim-label> 
-      </bim-panel-section>
-      <bim-panel-section label="Controls">
-        <bim-button @click=${exportBCF} label="Export BCF"></bim-button> 
-        <bim-button @click=${loadBCF} label="Load BCF"></bim-button>
-      </bim-panel-section>
-    </bim-panel>
-  `;
-});
-
-document.body.append(panel);
+//     <bim-panel active label="BCFTopics Tutorial" class="options-menu">
+//       <bim-panel-section label="Info">
+//         <bim-label style="width: 14rem; white-space: normal;">💡 To fully experience this tutorial, open your browser console!</bim-label> 
+//       </bim-panel-section>
+//       <bim-panel-section label="Controls">
+//         <bim-button @click=${exportBCF} label="Export BCF"></bim-button> 
+//         <bim-button @click=${loadBCF} label="Load BCF"></bim-button>
+//       </bim-panel-section>
+//     </bim-panel>
+//   `;
+// });
+// 
+// document.body.append(panel);
 
 /* MD
   And we will make some logic that adds a button to the screen when the user is visiting our app from their phone, allowing to show or hide the menu. Otherwise, the menu would make the app unusable.
@@ -291,19 +291,19 @@ document.body.append(panel);
 
 // const button = BUI.Component.create<BUI.PanelSection>(() => {
 //   return BUI.html`
-      <bim-button class="phone-menu-toggler" icon="solar:settings-bold"
-        @click="${() => {
-          if (panel.classList.contains("options-menu-visible")) {
-            panel.classList.remove("options-menu-visible");
-          } else {
-            panel.classList.add("options-menu-visible");
-          }
-        }}">
-      </bim-button>
-    `;
-});
-
-document.body.append(button);
+//       <bim-button class="phone-menu-toggler" icon="solar:settings-bold"
+//         @click="${() => {
+//           if (panel.classList.contains("options-menu-visible")) {
+//             panel.classList.remove("options-menu-visible");
+//           } else {
+//             panel.classList.add("options-menu-visible");
+//           }
+//         }}">
+//       </bim-button>
+//     `;
+// });
+// 
+// document.body.append(button);
 
 /* MD
   ### ⏱️ Measuring the performance (optional)

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import * as CORE from '@thatopen/components';
+import * as CORE from '../';
 
 interface IFCViewerProps {
   file: File | null;
@@ -16,7 +16,6 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [viewerReady, setViewerReady] = useState(false);
   const [modelsCount, setModelsCount] = useState(0);
-  const [customFragPath, setCustomFragPath] = useState('');
   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
 
   // 1) Инициализация точно как в примере
@@ -238,42 +237,6 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
     init();
   }, []);
 
-  // 2) Загрузка кастомного фрагмента
-  const loadCustomFragment = async () => {
-    if (!fragmentsRef.current || !viewerReady || !customFragPath.trim()) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const fragments = fragmentsRef.current;
-      const path = customFragPath.startsWith('/') ? customFragPath : `/fragments/${customFragPath}`;
-      
-      console.log('🚀 [CUSTOM] Загружаем кастомный фрагмент:', path);
-      
-      const modelId = path.split("/").pop()?.split(".").shift() || 'custom';
-      console.log(`🆔 [CUSTOM] Model ID: ${modelId}`);
-      
-      const file = await fetch(path);
-      if (!file.ok) {
-        throw new Error(`Файл не найден: ${path}`);
-      }
-      
-      const buffer = await file.arrayBuffer();
-      console.log(`📦 [CUSTOM] Буфер получен, размер: ${buffer.byteLength} байт`);
-      
-      const result = await fragments.core.load(buffer, { modelId });
-      console.log(`✅ [CUSTOM] Фрагмент загружен:`, result);
-      
-      setCustomFragPath(''); // Очищаем поле ввода
-      
-    } catch (e: any) {
-      console.error('❌ [CUSTOM] Ошибка загрузки кастомного фрагмента:', e);
-      setError(`Не удалось загрузить фрагмент: ${e?.message ?? 'Неизвестная ошибка'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // 3) Загрузка фрагментов (как в примере)
   const loadFragments = async () => {
@@ -325,7 +288,7 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
              const results = await Promise.all(fragPaths.map(async (path, i) => {
                console.log(`📥 [LOAD-${i}] Загружаем фрагмент: ${path}`);
 
-               const modelId = path.split("/").pop()?.split(".").shift();
+          const modelId = path.split("/").pop()?.split(".").shift();
                console.log(`🆔 [LOAD-${i}] Model ID: ${modelId}`);
 
                if (!modelId) {
@@ -334,14 +297,14 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
                }
 
                console.log(`🌐 [LOAD-${i}] Запрашиваем файл...`);
-               const file = await fetch(path);
+          const file = await fetch(path);
                console.log(`📡 [LOAD-${i}] Ответ получен:`, file.status, file.statusText);
 
-               const buffer = await file.arrayBuffer();
+          const buffer = await file.arrayBuffer();
                console.log(`📦 [LOAD-${i}] Буфер получен, размер: ${buffer.byteLength} байт`);
 
                console.log(`🔄 [LOAD-${i}] Загружаем в fragments.core...`);
-               // this is the main function to load the fragments (как в примере)
+          // this is the main function to load the fragments (как в примере)
                const result = await fragments.core.load(buffer, { modelId });
                console.log(`✅ [LOAD-${i}] Фрагмент загружен:`, result);
                console.log(`📊 [LOAD-${i}] Количество моделей после загрузки: ${fragments.list.size}`);
@@ -420,105 +383,7 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
     console.log(`🗑️ Удалена архитектурная модель: ${modelId}`);
   };
 
-  // 5) Детальный анализ памяти
-  const analyzeMemory = () => {
-    console.log('🔍 [ANALYZE] Детальный анализ памяти...');
-    
-    if (!worldRef.current) {
-      console.warn('⚠️ [ANALYZE] World не инициализирован');
-      return;
-    }
-    
-    const world = worldRef.current;
-    let totalVertices = 0;
-    let totalFaces = 0;
-    let geometryCount = 0;
-    let materialCount = 0;
-    let textureCount = 0;
-    let totalMemoryEstimate = 0;
-    
-    // Анализируем все объекты в сцене
-    world.scene.three.traverse((child: THREE.Object3D) => {
-      if (child instanceof THREE.Mesh) {
-        geometryCount++;
-        
-        // Геометрия
-        if (child.geometry) {
-          const geometry = child.geometry;
-          
-          // Вершины
-          if (geometry.attributes.position) {
-            const vertices = geometry.attributes.position.count;
-            totalVertices += vertices;
-            totalMemoryEstimate += vertices * 8 * 4; // позиции + нормали + UV
-          }
-          
-          // Индексы
-          if (geometry.index) {
-            const faces = geometry.index.count / 3;
-            totalFaces += faces;
-            totalMemoryEstimate += geometry.index.count * 2;
-          }
-        }
-        
-        // Материалы
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            materialCount += child.material.length;
-            child.material.forEach(mat => {
-              totalMemoryEstimate += 2048; // ~2KB на материал
-              
-              // Текстуры в материалах
-              if (mat.map) textureCount++;
-              if (mat.normalMap) textureCount++;
-              if (mat.roughnessMap) textureCount++;
-              if (mat.metalnessMap) textureCount++;
-            });
-          } else {
-            materialCount++;
-            totalMemoryEstimate += 2048;
-            
-            if (child.material.map) textureCount++;
-            if (child.material.normalMap) textureCount++;
-            if (child.material.roughnessMap) textureCount++;
-            if (child.material.metalnessMap) textureCount++;
-          }
-        }
-      }
-    });
-    
-    // Оценка памяти текстур
-    const textureMemory = textureCount * 1024 * 1024; // ~1MB на текстуру
-    totalMemoryEstimate += textureMemory;
-    
-    console.log('📊 [ANALYZE] Результаты анализа:');
-    console.log('  🎯 Геометрий:', geometryCount);
-    console.log('  🎭 Материалов:', materialCount);
-    console.log('  🖼️ Текстур:', textureCount);
-    console.log('  📐 Вершин:', totalVertices.toLocaleString());
-    console.log('  🔺 Треугольников:', totalFaces.toLocaleString());
-    console.log('  💾 Оценка памяти 3D:', Math.round(totalMemoryEstimate / 1024 / 1024), 'MB');
-    console.log('  🖼️ Память текстур:', Math.round(textureMemory / 1024 / 1024), 'MB');
-    
-    // Сравнение с реальной памятью
-    if ((performance as any).memory) {
-      const mem = (performance as any).memory;
-      const realMemory = mem.usedJSHeapSize;
-      const estimatedMemory = totalMemoryEstimate;
-      const ratio = realMemory / estimatedMemory;
-      
-      console.log('📈 [ANALYZE] Сравнение:');
-      console.log('  🔴 Реальная память:', Math.round(realMemory / 1024 / 1024), 'MB');
-      console.log('  🔵 Оценка 3D:', Math.round(estimatedMemory / 1024 / 1024), 'MB');
-      console.log('  📊 Коэффициент:', ratio.toFixed(2));
-      
-      if (ratio > 3) {
-        console.warn('⚠️ [ANALYZE] Память превышает оценку в', ratio.toFixed(1), 'раз! Возможны утечки.');
-      }
-    }
-  };
-
-  // 6) Удаление всех моделей (как в примере)
+  // 5) Удаление всех моделей (как в примере)
   const deleteAllModels = () => {
     console.log('🗑️ [DELETE] Начинаем удаление всех моделей...');
     console.log('🔍 [DELETE] Проверяем fragmentsRef.current:', !!fragmentsRef.current);
@@ -595,51 +460,6 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
                </div>
 
         
-        {/* Поле для загрузки кастомного фрагмента */}
-        <div style={{ 
-          marginBottom: '15px', 
-          display: 'flex', 
-          gap: '10px', 
-          alignItems: 'center',
-          flexWrap: 'wrap'
-        }}>
-          <input
-            type="text"
-            value={customFragPath}
-            onChange={(e) => setCustomFragPath(e.target.value)}
-            placeholder="Имя файла фрагмента (например: my_model.frag)"
-            style={{
-              flex: 1,
-              minWidth: '200px',
-              padding: '10px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              fontSize: '14px',
-              outline: 'none',
-              transition: 'border-color 0.2s ease'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#007bff'}
-            onBlur={(e) => e.target.style.borderColor = '#ddd'}
-          />
-          <button
-            onClick={loadCustomFragment}
-            disabled={isLoading || !customFragPath.trim()}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: (!isLoading && customFragPath.trim()) ? '#17a2b8' : '#ccc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: (!isLoading && customFragPath.trim()) ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            📁 Загрузить
-          </button>
-        </div>
         
         {/* Кнопки действий */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -755,37 +575,6 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
                 }}
               >
                 💾 Скачать фрагменты
-              </button>
-              
-              <button
-                onClick={analyzeMemory}
-                disabled={isLoading}
-                style={{
-                  padding: '12px 20px',
-                  backgroundColor: !isLoading ? '#17a2b8' : '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: !isLoading ? 'pointer' : 'not-allowed',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease',
-                  boxShadow: !isLoading ? '0 2px 8px rgba(23, 162, 184, 0.3)' : 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isLoading) {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(23, 162, 184, 0.4)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isLoading) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(23, 162, 184, 0.3)';
-                  }
-                }}
-              >
-                🔍 Анализ памяти
               </button>
               
               <button

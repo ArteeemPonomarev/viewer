@@ -259,46 +259,46 @@ BUI.Manager.init();
 Now we will add some UI to play around with the actions in this tutorial. For more information about the UI library, you can check the specific documentation for it!
 */
 
-const panel = BUI.Component.create<BUI.PanelSection>(() => {
-  const onReviewModel = async ({ target }: { target: BUI.Button }) => {
-    target.loading = true;
-    await testSpec();
-    target.loading = false;
-  };
-
-  return BUI.html`
-    <bim-panel active label="IDS Specifications Tutorial" class="options-menu">
-      <bim-panel-section label="General">
-        <bim-button label="Toogle Ghost" @click=${toggleGhost}></bim-button>
-      </bim-panel-section>
-      <bim-panel-section label="Specification">
-        <bim-button label="Review Model" @click=${onReviewModel}></bim-button>
-      </bim-panel-section>
-    </bim-panel>
-  `;
-});
-
-document.body.append(panel);
+// const panel = BUI.Component.create<BUI.PanelSection>(() => {
+//   const onReviewModel = async ({ target }: { target: BUI.Button }) => {
+//     target.loading = true;
+//     await testSpec();
+//     target.loading = false;
+//   };
+// 
+//   return BUI.html`
+//     <bim-panel active label="IDS Specifications Tutorial" class="options-menu">
+//       <bim-panel-section label="General">
+//         <bim-button label="Toogle Ghost" @click=${toggleGhost}></bim-button>
+//       </bim-panel-section>
+//       <bim-panel-section label="Specification">
+//         <bim-button label="Review Model" @click=${onReviewModel}></bim-button>
+//       </bim-panel-section>
+//     </bim-panel>
+//   `;
+// });
+// 
+// document.body.append(panel);
 
 /* MD
   And we will make some logic that adds a button to the screen when the user is visiting our app from their phone, allowing to show or hide the menu. Otherwise, the menu would make the app unusable.
 */
 
-const button = BUI.Component.create<BUI.PanelSection>(() => {
-  return BUI.html`
-      <bim-button class="phone-menu-toggler" icon="solar:settings-bold"
-        @click="${() => {
-          if (panel.classList.contains("options-menu-visible")) {
-            panel.classList.remove("options-menu-visible");
-          } else {
-            panel.classList.add("options-menu-visible");
-          }
-        }}">
-      </bim-button>
-    `;
-});
-
-document.body.append(button);
+// const button = BUI.Component.create<BUI.PanelSection>(() => {
+//   return BUI.html`
+//       <bim-button class="phone-menu-toggler" icon="solar:settings-bold"
+//         @click="${() => {
+//           if (panel.classList.contains("options-menu-visible")) {
+//             panel.classList.remove("options-menu-visible");
+//           } else {
+//             panel.classList.add("options-menu-visible");
+//           }
+//         }}">
+//       </bim-button>
+//     `;
+// });
+// 
+// document.body.append(button);
 
 /* MD
   ### ⏱️ Measuring the performance (optional)
