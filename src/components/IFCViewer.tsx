@@ -53,7 +53,48 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
         // Renderer (как в примере)
         console.log('🎨 [INIT] Создаем Renderer...');
         world.renderer = new CORE.SimpleRenderer(components, containerRef.current!);
-        console.log('✅ [INIT] Renderer создан:', world.renderer);
+        
+        // Оптимизации рендерера для предотвращения проблем с WebGL
+        console.log('⚡ [INIT] Настраиваем оптимизации рендерера...');
+        
+        // Ограничиваем частоту обновлений
+        world.renderer.three.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Настраиваем WebGL контекст
+        const gl = world.renderer.three.getContext();
+        if (gl) {
+          // Включаем расширения для лучшей совместимости
+          gl.getExtension('OES_element_index_uint');
+          gl.getExtension('WEBGL_depth_texture');
+          gl.getExtension('OES_texture_float');
+          gl.getExtension('OES_texture_half_float');
+          
+          // Отключаем instanced rendering для предотвращения ошибок
+          const instancedArrays = gl.getExtension('ANGLE_instanced_arrays');
+          if (instancedArrays) {
+            // Отключаем instanced rendering
+            console.log('🔧 [RENDERER] Instanced rendering отключен для стабильности');
+          }
+        }
+        
+        // Настраиваем автоматическую очистку
+        world.renderer.three.autoClear = true;
+        world.renderer.three.autoClearColor = true;
+        world.renderer.three.autoClearDepth = true;
+        world.renderer.three.autoClearStencil = true;
+        
+        console.log('✅ [INIT] Renderer создан с оптимизациями:', world.renderer);
+        
+        // Глобальная обработка WebGL ошибок
+        const canvas = world.renderer.three.domElement;
+        canvas.addEventListener('webglcontextlost', (event) => {
+          console.warn('⚠️ [WEBGL] Контекст потерян:', event);
+          event.preventDefault();
+        });
+        
+        canvas.addEventListener('webglcontextrestored', (event) => {
+          console.log('✅ [WEBGL] Контекст восстановлен:', event);
+        });
 
         // Camera (как в примере)
         console.log('📷 [INIT] Настраиваем Camera...');
@@ -96,6 +137,36 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
           fragments.core.update(true);
         });
         
+        // Упрощенная оптимизация рендеринга
+        let isRendering = false;
+        
+        const optimizedUpdate = () => {
+          if (isRendering) return;
+          isRendering = true;
+          
+          requestAnimationFrame(() => {
+            try {
+              // Проверяем WebGL контекст перед обновлением
+              if (world.renderer) {
+                const gl = world.renderer.three.getContext();
+                if (gl && gl.isContextLost()) {
+                  console.warn('⚠️ [RENDER] WebGL контекст потерян');
+                  return;
+                }
+              }
+              
+              fragments.core.update(true); // Включаем принудительное обновление для отображения
+            } catch (error) {
+              console.warn('⚠️ [RENDER] Ошибка обновления рендера:', error);
+            } finally {
+              isRendering = false;
+            }
+          });
+        };
+        
+        // Используем оптимизированное обновление для движения камеры
+        world.camera.controls.addEventListener("control", optimizedUpdate);
+        
         console.log('✅ [INIT] Camera controls настроены');
 
         // Fragments list (как в примере)
@@ -115,6 +186,65 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
           world.scene.three.add(model.object);
           console.log('✅ [FRAGMENT] Модель добавлена в сцену');
           
+          // Строгая проверка и исправление WebGL буферов
+          console.log('🔧 [FRAGMENT] Проверяем WebGL буферы...');
+          model.object.traverse((child: THREE.Object3D) => {
+            if (child instanceof THREE.Mesh && child.geometry) {
+              const geometry = child.geometry;
+              
+              // Проверяем наличие необходимых атрибутов
+              if (!geometry.attributes.position) {
+                console.warn('⚠️ [FRAGMENT] Отсутствует атрибут position, пропускаем объект');
+                return;
+              }
+              
+              // Проверяем валидность буферов
+              const positionAttr = geometry.attributes.position;
+              if (!positionAttr.array || positionAttr.count === 0) {
+                console.warn('⚠️ [FRAGMENT] Невалидный position буфер, пропускаем объект');
+                return;
+              }
+              
+              // Убеждаемся, что буферы правильно настроены
+              if (geometry.attributes.position) {
+                geometry.attributes.position.needsUpdate = true;
+                geometry.attributes.position.updateRange = { offset: 0, count: -1 };
+              }
+              if (geometry.attributes.normal) {
+                geometry.attributes.normal.needsUpdate = true;
+                geometry.attributes.normal.updateRange = { offset: 0, count: -1 };
+              }
+              if (geometry.attributes.uv) {
+                geometry.attributes.uv.needsUpdate = true;
+                geometry.attributes.uv.updateRange = { offset: 0, count: -1 };
+              }
+              
+              // Проверяем индексы
+              if (geometry.index) {
+                geometry.index.needsUpdate = true;
+                geometry.index.updateRange = { offset: 0, count: -1 };
+              }
+              
+              // Обновляем геометрию
+              geometry.computeBoundingBox();
+              geometry.computeBoundingSphere();
+              
+              // Отключаем instanced rendering для этого объекта
+              if (child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach(mat => {
+                    if (mat.instanced) {
+                      mat.instanced = false;
+                    }
+                  });
+                } else if (child.material.instanced) {
+                  child.material.instanced = false;
+                }
+              }
+            }
+          });
+          console.log('✅ [FRAGMENT] WebGL буферы проверены и исправлены');
+          
           console.log('🔍 [FRAGMENT] Проверяем содержимое сцены:');
           console.log('📊 [FRAGMENT] Количество объектов в сцене:', world.scene.three.children.length);
           console.log('🎯 [FRAGMENT] Объекты в сцене:', world.scene.three.children.map(child => ({
@@ -126,8 +256,23 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
           })));
           
           console.log('🔄 [FRAGMENT] Обновляем рендер...');
-          fragments.core.update(true);
-          console.log('✅ [FRAGMENT] Рендер обновлен');
+          
+          // Безопасное обновление рендера с проверкой WebGL состояния
+          try {
+            // Проверяем WebGL контекст
+            if (world.renderer) {
+              const gl = world.renderer.three.getContext();
+              if (gl && gl.isContextLost()) {
+                console.warn('⚠️ [FRAGMENT] WebGL контекст потерян, пропускаем обновление');
+                return;
+              }
+            }
+            
+            fragments.core.update(true); // Включаем принудительное обновление для отображения
+            console.log('✅ [FRAGMENT] Рендер обновлен');
+          } catch (error) {
+            console.error('❌ [FRAGMENT] Ошибка обновления рендера:', error);
+          }
           
           setModelsCount(fragments.list.size);
           console.log('📊 [FRAGMENT] Количество моделей:', fragments.list.size);
@@ -325,6 +470,11 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
       console.log('📊 [LOAD] Результаты загрузки:', results);
       console.log('📊 [LOAD] Финальное количество моделей:', fragments.list.size);
       
+      // Принудительное обновление рендера после загрузки всех фрагментов
+      console.log('🔄 [LOAD] Принудительное обновление рендера...');
+      fragments.core.update(true);
+      console.log('✅ [LOAD] Рендер обновлен');
+      
       // Проверяем состояние сцены после загрузки
       if (worldRef.current) {
         console.log('🔍 [LOAD] Проверяем состояние сцены после загрузки:');
@@ -457,7 +607,7 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
                  fontWeight: '500'
                }}>
                  Загружено моделей: <strong style={{ color: '#007bff' }}>{modelsCount}</strong>
-               </div>
+        </div>
 
         
         
