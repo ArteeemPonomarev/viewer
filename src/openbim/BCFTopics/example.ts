@@ -8,7 +8,7 @@
 */
 
 import Stats from "stats.js";
-import * as BUI from "@thatopen/ui";
+// import * as BUI from "@thatopen/ui";
 // You have to import * as OBC from "@thatopen/components"
 import * as OBC from "../..";
 
@@ -57,14 +57,14 @@ world.camera.controls.addEventListener("rest", () =>
   fragments.core.update(true),
 );
 
-world.onCameraChanged.add((camera) => {
+world.onCameraChanged.add((camera: any) => {
   for (const [, model] of fragments.list) {
     model.useCamera(camera.three);
   }
   fragments.core.update(true);
 });
 
-fragments.list.onItemSet.add(({ value: model }) => {
+fragments.list.onItemSet.add(({ value: model }: any) => {
   model.useCamera(world.camera.three);
   world.scene.three.add(model.object);
   fragments.core.update(true);
@@ -119,7 +119,7 @@ bcfTopics.setup({
 */
 
 const viewpoints = components.get(OBC.Viewpoints);
-bcfTopics.list.onItemSet.add(async ({ value: topic }) => {
+bcfTopics.list.onItemSet.add(async ({ value: topic }: any) => {
   const viewpoint = viewpoints.create();
   viewpoint.world = world;
 
@@ -130,7 +130,7 @@ bcfTopics.list.onItemSet.add(async ({ value: topic }) => {
 
   // Comments can be optionally related to viewpoints.
   // In this case, each time a comment is added the default viewpoint is used on it.
-  topic.comments.onItemSet.add(({ value: comment }) => {
+  topic.comments.onItemSet.add(({ value: comment }: any) => {
     comment.viewpoint = viewpoint.guid;
   });
 });
@@ -193,17 +193,17 @@ const secondComment = topic.createComment("Hi there! I agree.");
   Topics are editable like regular classes. Direct property updates won't trigger events, but using the `set` method will. Here's an example of listening for topic updates:
 */
 
-bcfTopics.list.onItemUpdated.add(({ value: topic }) => {
+bcfTopics.list.onItemUpdated.add(({ value: topic }: any) => {
   console.log(`Topic ${topic.title} was updated!`);
 });
 
 // This updates the information, but doesn't trigger any update.
-topic.title = "Updated Title";
+// topic.title = "Updated Title";
 
 // This updates the information, but also triggers updates listened by the UI in `@thatopen/ui`
-topic.set({ title: "New Title" });
+// topic.set({ title: "New Title" });
 
-topic.comments.onItemUpdated.add(({ value: comment }) => {
+topic.comments.onItemUpdated.add(({ value: comment }: any) => {
   console.log("The following comment has been updated:", comment);
 });
 
@@ -263,14 +263,14 @@ const loadBCF = () => {
   We will use the `@thatopen/ui` library to add some simple and cool UI elements to our app. First, we need to call the `init` method of the `BUI.Manager` class to initialize the library:
 */
 
-BUI.Manager.init();
+// BUI.Manager.init();
 
 /* MD
 Now we will add some UI to play around with the actions in this tutorial. For more information about the UI library, you can check the specific documentation for it!
 */
 
-const panel = BUI.Component.create<BUI.PanelSection>(() => {
-  return BUI.html`
+// const panel = BUI.Component.create<BUI.PanelSection>(() => {
+//   return BUI.html`
     <bim-panel active label="BCFTopics Tutorial" class="options-menu">
       <bim-panel-section label="Info">
         <bim-label style="width: 14rem; white-space: normal;">💡 To fully experience this tutorial, open your browser console!</bim-label> 
@@ -289,8 +289,8 @@ document.body.append(panel);
   And we will make some logic that adds a button to the screen when the user is visiting our app from their phone, allowing to show or hide the menu. Otherwise, the menu would make the app unusable.
 */
 
-const button = BUI.Component.create<BUI.PanelSection>(() => {
-  return BUI.html`
+// const button = BUI.Component.create<BUI.PanelSection>(() => {
+//   return BUI.html`
       <bim-button class="phone-menu-toggler" icon="solar:settings-bold"
         @click="${() => {
           if (panel.classList.contains("options-menu-visible")) {

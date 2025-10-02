@@ -10,7 +10,7 @@
 import * as THREE from "three";
 import * as FRAGS from "@thatopen/fragments";
 import Stats from "stats.js";
-import * as BUI from "@thatopen/ui";
+// import * as BUI from "@thatopen/ui";
 // You have to import * as OBC from "@thatopen/components"
 import * as OBC from "../..";
 
@@ -59,14 +59,14 @@ world.camera.controls.addEventListener("rest", () =>
   fragments.core.update(true),
 );
 
-world.onCameraChanged.add((camera) => {
+world.onCameraChanged.add((camera: any) => {
   for (const [, model] of fragments.list) {
     model.useCamera(camera.three);
   }
   fragments.core.update(true);
 });
 
-fragments.list.onItemSet.add(({ value: model }) => {
+fragments.list.onItemSet.add(({ value: model }: any) => {
   model.useCamera(world.camera.three);
   world.scene.three.add(model.object);
   fragments.core.update(true);
@@ -159,7 +159,7 @@ const setModelTransparent = (components: OBC.Components) => {
     }
 
     originalColors.set(material, {
-      color,
+      color: color ?? 0xffffff,
       transparent: material.transparent,
       opacity: material.opacity,
     });
@@ -180,7 +180,7 @@ const restoreModelMaterials = () => {
   for (const [material, data] of originalColors) {
     const { color, transparent, opacity } = data;
     material.transparent = transparent;
-    material.opacity = opacity;
+    material.opacity = opacity ?? 1;
     if ("color" in material) {
       material.color.setHex(color);
     } else {

@@ -3,7 +3,7 @@ import * as FRAGS from "@thatopen/fragments";
 
 // @ts-ignore
 import { FragmentsModels } from "@thatopen/fragments";
-import { Component, Components, Event, Disposable } from "../../core";
+import { Component, Components, Event, Disposable } from "./core";
 
 /**
  * Mapping of model identifiers to a collection of numbers representing localIds.
@@ -56,7 +56,7 @@ export class FragmentsManager extends Component implements Disposable {
 
   constructor(components: Components) {
     super(components);
-    this.components.add(FragmentsManager.uuid, this);
+    components.add(FragmentsManager.uuid, this);
   }
 
   /** {@link Disposable.dispose} */

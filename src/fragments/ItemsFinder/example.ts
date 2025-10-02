@@ -224,7 +224,7 @@ queriesList.columns = ["Name", { name: "Actions", width: "auto" }];
 queriesList.noIndentation = true;
 queriesList.headersHidden = true;
 queriesList.dataTransform = {
-  Actions: (_, rowData) => {
+  Actions: (_: any, rowData: any) => {
     const { Name } = rowData;
     if (!Name) return _;
 

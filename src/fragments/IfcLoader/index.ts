@@ -130,7 +130,7 @@ export class IfcLoader extends Component implements Disposable {
       bytes: data,
     });
 
-    const model = await fragments.core.load(bytes, {
+    const model = await fragments.core.load(bytes.buffer as ArrayBuffer, {
       modelId: name,
       userData: config?.userData,
     });

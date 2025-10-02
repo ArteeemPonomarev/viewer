@@ -21,6 +21,13 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
+  "exclude": [
+    "src/**/example.ts",
+    "src/**/test.ts",
+    "src/core/**/src/**",
+    "src/fragments/**/src/**",
+    "src/openbim/**/src/**"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
 
