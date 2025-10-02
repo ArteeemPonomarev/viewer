@@ -164,10 +164,87 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
           });
         };
         
-        // Используем оптимизированное обновление для движения камеры
-        world.camera.controls.addEventListener("control", optimizedUpdate);
+    // Используем оптимизированное обновление для движения камеры
+    world.camera.controls.addEventListener("control", () => {
+      console.log('🎬 [CAMERA] Камера движется, возобновляем обновления...');
+      fragments.core.update(true); // Включаем обновления при движении
+      optimizedUpdate();
+    });
+    
+    // Добавляем обработчик остановки камеры для очистки памяти
+    world.camera.controls.addEventListener("rest", () => {
+      console.log('🛑 [CAMERA] Камера остановлена, очищаем память...');
+      
+      // ОСТАНОВКА ВСЕХ ОБНОВЛЕНИЙ РЕНДЕРА
+      console.log('🛑 [CAMERA] Останавливаем все обновления рендера...');
+      fragments.core.update(false); // Останавливаем обновления
+      
+      // Принудительная очистка WebGL буферов
+      if (world.renderer) {
+        const gl = world.renderer.three.getContext();
+        if (gl) {
+          // Очищаем неиспользуемые буферы
+          gl.flush();
+          gl.finish();
+          console.log('🧹 [WEBGL] WebGL буферы очищены');
+        }
+      }
+      
+      // Принудительная сборка мусора (если доступна)
+      if ((window as any).gc) {
+        (window as any).gc();
+        console.log('🗑️ [MEMORY] Принудительная сборка мусора выполнена');
+      }
+      
+      // Диагностика памяти
+      if ((performance as any).memory) {
+        const mem = (performance as any).memory;
+        console.log('📊 [MEMORY] Память после остановки камеры:');
+        console.log('  Used:', Math.round(mem.usedJSHeapSize / 1024 / 1024), 'MB');
+        console.log('  Total:', Math.round(mem.totalJSHeapSize / 1024 / 1024), 'MB');
+      }
+    });
         
         console.log('✅ [INIT] Camera controls настроены');
+        
+        // Агрессивная очистка памяти каждые 5 секунд
+        const memoryCleanupInterval = setInterval(() => {
+          if (worldRef.current && fragmentsRef.current) {
+            console.log('🧹 [CLEANUP] Агрессивная очистка памяти...');
+            
+            // Останавливаем все обновления рендера
+            fragmentsRef.current.core.update(false);
+            
+            // Принудительная сборка мусора
+            if ((window as any).gc) {
+              (window as any).gc();
+            }
+            
+            // Очистка WebGL контекста
+            if (worldRef.current.renderer) {
+              const gl = worldRef.current.renderer.three.getContext();
+              if (gl) {
+                gl.flush();
+                gl.finish();
+              }
+            }
+            
+            // Диагностика памяти
+            if ((performance as any).memory) {
+              const mem = (performance as any).memory;
+              const usedMB = Math.round(mem.usedJSHeapSize / 1024 / 1024);
+              console.log('📊 [CLEANUP] Память:', usedMB, 'MB');
+              
+              // Предупреждение о высоком потреблении памяти
+              if (usedMB > 1000) {
+                console.warn('⚠️ [MEMORY] Высокое потребление памяти:', usedMB, 'MB');
+              }
+            }
+          }
+        }, 5000); // 5 секунд
+        
+        // Сохраняем интервал для очистки при размонтировании
+        (worldRef.current as any).memoryCleanupInterval = memoryCleanupInterval;
 
         // Fragments list (как в примере)
         console.log('📋 [INIT] Настраиваем Fragments list handlers...');
@@ -380,6 +457,29 @@ const IFCViewer: React.FC<IFCViewerProps> = () => {
     };
 
     init();
+    
+    // Cleanup функция
+    return () => {
+      console.log('🧹 [CLEANUP] Очистка компонента...');
+      
+      // Очищаем интервал очистки памяти
+      if (worldRef.current && (worldRef.current as any).memoryCleanupInterval) {
+        clearInterval((worldRef.current as any).memoryCleanupInterval);
+        console.log('🗑️ [CLEANUP] Очищен интервал очистки памяти');
+      }
+      
+      if (worldRef.current) {
+        console.log('🗑️ [CLEANUP] Удаляем world...');
+        worldRef.current.dispose();
+        worldRef.current = null;
+      }
+      if (fragmentsRef.current) {
+        console.log('🗑️ [CLEANUP] Удаляем fragments...');
+        fragmentsRef.current.dispose();
+        fragmentsRef.current = null;
+      }
+      console.log('✅ [CLEANUP] Очистка завершена');
+    };
   }, []);
 
 
